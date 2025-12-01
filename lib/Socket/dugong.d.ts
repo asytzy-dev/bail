@@ -70,15 +70,16 @@ declare namespace kikyy {
     }
 
     interface InteractiveMessage {
+        header?: string;
         title: string;
         footer?: string;
         thumbnail?: string;
         image?: string | Buffer | { url: string };
         video?: string | Buffer | { url: string };
-        document?: Buffer;
+        document?: string | Buffer | { url: string };
         mimetype?: string;
         fileName?: string;
-        jpegThumbnail?: Buffer; // Hanya Buffer saja
+        jpegThumbnail?: string | Buffer | { url: string };
         contextInfo?: {
             mentionedJid?: string[];
             forwardingScore?: number;
@@ -116,8 +117,8 @@ declare namespace kikyy {
     }
 
     interface AlbumItem {
-        image?: { url: string; caption?: string };
-        video?: { url: string; caption?: string };
+        image?: string | Buffer | { url: string; caption?: string };
+        video?: string | Buffer | { url: string; caption?: string };
     }
 
     interface EventMessageLocation {
@@ -146,6 +147,16 @@ declare namespace kikyy {
         name: string;
         pollVotes: PollVote[];
     }
+
+    interface GroupStatusMessage {
+        message?: any;
+        image?: string | Buffer | { url: string };
+        video?: string | Buffer | { url: string };
+        text?: string;
+        caption?: string;
+        document?: string | Buffer | { url: string };
+        [key: string]: any;
+    }
  
     interface MessageContent {
         requestPaymentMessage?: PaymentMessage;
@@ -154,6 +165,7 @@ declare namespace kikyy {
         albumMessage?: AlbumItem[];
         eventMessage?: EventMessage;
         pollResultMessage?: PollResultMessage;
+        groupStatusMessage?: GroupStatusMessage;
         sender?: string;
     }
 
@@ -168,6 +180,13 @@ declare namespace kikyy {
         generateWAMessageFromContent: (jid: string, content: any, options?: any) => Promise<any>;
         generateWAMessage: (jid: string, content: any, options?: any) => Promise<any>;
         generateMessageID: () => string;
+        prepareMessageContent?: (content: any, options?: any) => Promise<any>;
+    }
+
+    interface BailUtils {
+        generateWAMessageContent?: (content: any, options: WAMessageContentGenerationOptions) => Promise<any>;
+        generateMessageID: () => string;
+        getContentType: (msg: any) => string;
     }
 }
 
@@ -178,7 +197,7 @@ declare class kikyy {
         relayMessageFn?: (jid: string, content: any, options?: any) => Promise<any>
     );
     
-    detectType(content: kikyy.MessageContent): 'PAYMENT' | 'PRODUCT' | 'INTERACTIVE' | 'ALBUM' | 'EVENT' | 'POLL_RESULT' | null;
+    detectType(content: kikyy.MessageContent): 'PAYMENT' | 'PRODUCT' | 'INTERACTIVE' | 'ALBUM' | 'EVENT' | 'POLL_RESULT' | 'GROUP_STORY' | null;
 
     handlePayment(
         content: { requestPaymentMessage: kikyy.PaymentMessage },
@@ -214,6 +233,22 @@ declare class kikyy {
         jid: string,
         quoted?: proto.IWebMessageInfo
     ): Promise<any>;
+
+    handleGroupStory(
+        content: { groupStatusMessage: kikyy.GroupStatusMessage },
+        jid: string,
+        quoted?: proto.IWebMessageInfo
+    ): Promise<any>;
+
+    buildMessageContent(
+        content: any,
+        opts?: kikyy.WAMessageContentGenerationOptions
+    ): Promise<any>;
+
+    utils: kikyy.Utils;
+    relayMessage: (jid: string, content: any, options?: any) => Promise<any>;
+    waUploadToServer: kikyy.WAMediaUploadFunction;
+    bail: kikyy.BailUtils;
 }
 
 export = kikyy;
